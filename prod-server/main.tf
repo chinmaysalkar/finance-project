@@ -14,7 +14,7 @@ resource "aws_instance" "prod-server" {
   connection {
     type        = "ssh"
     user        = "ubuntu"
-    private_key = file("./mtprojetct01.pem")
+    private_key = file("./myprojetct01.pem")
     host        = self.public_ip 
   }
    
