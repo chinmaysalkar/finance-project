@@ -3,52 +3,58 @@ pipeline {
 
   tools {
     maven 'M2_HOME'
-    }
+  }
   
   stages {
     stage('CheckOut') {
       steps {
         echo 'Checkout the source code from GitHub'
-        git 'https://github.com/chinmaysalkar/insurance-project.git'
-            }
+        git 'https://github.com/chinmaysalkar/finance-project.git'
+      }
     }
     
     stage('Package the Application') {
       steps {
-        echo " Packaing the Application"
+        echo "Packaging the Application"
         sh 'mvn clean package'
-            }
+      }
     }
     
     stage('Publish Reports using HTML') {
       steps {
-      publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '/var/lib/jenkins/workspace/Insure-project/target/surefire-reports', reportFiles: 'index.html', reportName: 'HTML Report', reportTitles: '', useWrapperFileDirectly: true])
-         }
-       }
-
+        publishHTML allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '/var/lib/jenkins/workspace/finance-project/target/surefire-reports', reportFiles: 'index.html', reportName: 'HTML Report', reportTitles: '', useWrapperFileDirectly: true
+      }
+    }
+    
     stage('Docker Image Creation') {
-       steps {
-         sh 'docker build -t chimaysalkar99/insurance-project:latest .'
-             }
-       }
+      steps {
+        sh 'docker build -t chimaysalkar99/finance-project:latest .'
+      }
+    }
  
-      stage('Docker Login') {
-       steps {
-         withCredentials([usernamePassword(credentialsId: 'docker-hub-cred', passwordVariable: 'dockerhubpassword', usernameVariable: 'dockerhubuser')]) {
-         sh "docker login -u ${env.dockerhubuser} -p ${env.dockerhubpassword}"
+    stage('Docker Login') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'docker-hub-cred', passwordVariable: 'dockerhubpassword', usernameVariable: 'dockerhubuser')]) {
+          sh "docker login -u ${env.dockerhubuser} -p ${env.dockerhubpassword}"
         }  
-             }
-         }
+      }
+    }
 
-     stage('Push Image to DockerHub') {
-       steps {
-         sh 'docker push chimaysalkar99/insurance-project:latest'
-            }
+    stage('Push Image to DockerHub') {
+      steps {
+        sh 'docker push chimaysalkar99/finance-project:latest'
+      }
+    }
+    
+    stage('Configure test-server with Terraform, Ansible and then Deploying') {
+      steps {
+        dir('test-server') {
+          sh 'chmod 600 myprojetct01.pem'
+          sh 'terraform init'
+          sh 'terraform validate'
+          sh 'terraform apply --auto-approve'
         }
-     stage('Deploy Aplication Ansible') {
-       steps { 
-         ansiblePlaybook credentialsId: 'private-key', disableHostKeyChecking: true, installation: 'ansible', inventory: '/etc/ansible/hosts', playbook: 'deploy.yml'
-           }
-       } 
-    } 
+      }
+    }
+  }
 }
